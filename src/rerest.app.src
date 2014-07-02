@@ -1,0 +1,12 @@
+{application, rerest,
+ [
+  {description, ""},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { rerest_app, []}},
+  {env, []}
+ ]}.
