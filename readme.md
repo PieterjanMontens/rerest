@@ -2,13 +2,13 @@ rerest - work in progress
 =========================
 
 ----
-This is a **work in progress**. Final application might be anything between description bellow and a flying saucer/cookie dispenser combo.
+This is a **work in progress**. Final application might be anything between description below and a flying saucer/cookie dispenser combo.
 
 ----
 
-Rerest is a **RE**STful **Re**cord **St**ore applying the **HATEOAS** constraints. As such, it can be automaticaly browsed by end-users, developers and software alike without the need for out-of-band information, even if application and URL structures evolve.
+Rerest is a **RESTful** Record Store applying the **HATEOAS** constraints. As such, it can be automaticaly browsed by end-users, developers and software alike without the need for out-of-band information, even if application and URL structures evolve.
 
-It is meant to be used as an Open Data record store, or as a simple internal Json depot.
+It is meant to be used as an Open Data record store, or as a simple internal Json/XML/whatever depot.
 
 Open Data record store:
 -----------------------
