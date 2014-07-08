@@ -1,12 +1,26 @@
+%% -*- mode: erlang;erlang-indent-level: 4;indent-tabs-mode: nil -*-
+%% ex: ts=4 sw=4 ft=erlang et
+
 {application, rerest,
  [
-  {description, ""},
-  {vsn, "1"},
-  {registered, []},
+  {description, "RESTful Record Store"},
+  {vsn, "0.0.1"},
+  {registered, [rerest_sup]},
   {applications, [
                   kernel,
-                  stdlib
+                  stdlib,
+                  crypto,
+                  ranch,
+                  cowlib,
+                  cowboy,
+                  lager,
+                  jiffy
                  ]},
-  {mod, { rerest_app, []}},
-  {env, []}
+  {mod, {rerest_app, []}},
+  {env, [{http_port,8080},
+         {lager, [{handlers, [{lager_console_backend, info},
+                              {lager_file_backend, [{file, "logs/error.log"}, {level, error}]},
+                              {lager_file_backend, [{file, "logs/console.log"}, {level, info}]}
+                 ]}
+]}]}
  ]}.
