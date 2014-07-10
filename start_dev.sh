@@ -50,7 +50,7 @@ fi
 
 echo
 echo \>\>\>\>\>\>\>\>\>\> Testing 
-make test
+rebar skip_deps=true eunit
  
 if [ "$PROMPT" = yes ]; then
     echo \>\>\>\>\>\>\>\>\>\> Press ctrl-c to cancel startup, any other key to continue

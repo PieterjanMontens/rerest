@@ -28,6 +28,11 @@ Adding support for other MIME's isn't very hard, just needing a function to conv
 
 ---
 
+Current status:
+---------------
+Unusable.
+
 Todo:
 -----
+ - have a working prototype (basic CRUD operations for JSON data only)
  - pretty much everything, but at least the app skeleton is there already

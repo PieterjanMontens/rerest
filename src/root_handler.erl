@@ -20,7 +20,17 @@
 %%          |                               | data for new record
 %% -------------------------------------------------------------------
 %% PUT      | NOT AVAILABLE
+%% -------------------------------------------------------------------
+%% DELETE   | NOT AVAILABLE
+%% -------------------------------------------------------------------
+%% PATCH    | NOT AVAILABLE
 %% ===================================================================
+%%
+%% @doc link relations provided by resource:
+%% self         - own IRI
+%% help         - documentation index (for root page)
+%%
+
 
 -module(root_handler).
 
@@ -32,6 +42,12 @@
 %% Optional REST callbacks
 -export([content_types_provided/2
         ,content_types_accepted/2
+        ,allowed_methods/2
+        ]).
+
+%% Media Content acceptors
+-export([from_form/2
+        ,from_json/2
         ]).
 
 %% Media Content Providers
@@ -56,19 +72,37 @@ rest_terminate(_Req, _State) ->
 %% ===================================================================
 %% REST Callbacks
 %% ===================================================================
+allowed_methods(Req,State) ->
+    {[<<"GET">>, <<"HEAD">>, <<"OPTIONS">>, <<"POST">>] ,Req ,State}.
 
 content_types_accepted(Req,State) ->
-    _Func = case cowboy_req:method(Req) of
-                <<"PUT">>  -> ok;
-                <<"POST">> -> ok
-          end,
-    Out = [{{<<"text">>,<<"html">>,'*'},to_html}],
+    Out = [{{<<"application">>,<<"json">>,'*'},from_json}
+          ,{{<<"application">>,<<"x-www-form-urlencoded">>,'*'},from_form}
+          ],
     {Out,Req,State}.
     
 content_types_provided(Req,State) ->
     Out = [{{<<"text">>,<<"html">>,'*'},to_html}],
     {Out,Req,State}.
 
+
+%% ===================================================================
+%% Content Acceptors
+%% ===================================================================
+% POST should reply with 302 redirect to resource
+% or 201 created ?
+% and self link, of course
+
+from_form(Req,State) ->
+    Body = <<"<h1>Wow, thanks!">>,
+    {Body,Req,State}.
+
+from_json(Req,State) ->
+    {ok,JSON,_} = cowboy_req:body(Req),
+    _RRIFF = rerest_convert:from_json(JSON),
+
+    Body  = <<"{'wow':'thanks'}">>,
+    {Body,Req,State}.
 
 %% ===================================================================
 %% Content Providers

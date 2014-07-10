@@ -19,8 +19,22 @@
 %% -------------------------------------------------------------------
 %% PUT      | Update record with data provided in request body
 %%          | (id's must correspond)
+%% -------------------------------------------------------------------
+%% DELETE   | Delete record (and all child records)
+%% -------------------------------------------------------------------
+%% PATCH    | NOT AVAILABLE - act on fields for partial updates
 %% ===================================================================
-
+%%
+%% @doc link relations provided by resource:
+%% self         - own IRI
+%% help         - documentation index (for record page)
+%% index        - table of contents (root)
+%% first        - first record of collection
+%% last         - last record of collection
+%% next         - next record
+%% prev         - previous record
+%% up           - URI of possible parent object 
+%%                should current record be part of a nested collection
 
 -module(record_handler).
 

@@ -16,7 +16,21 @@
 %% POST     | NOT AVAILABLE
 %% -------------------------------------------------------------------
 %% PUT      | Update field with data provided in request body
+%% -------------------------------------------------------------------
+%% DELETE   | Delete / remove field (and children, if contained)
+%% -------------------------------------------------------------------
+%% PATCH    | NOT AVAILABLE
 %% ===================================================================
+%%
+%% @doc link relations provided by resource:
+%% self         - own IRI
+%% help         - documentation index (for field page)
+%% contents     - table of contents (root)
+%% first        - first field of record
+%% last         - last field of record
+%% next         - next field
+%% prev         - previous field
+%% up           - URI of parent record
 
 
 -module(field_handler).
