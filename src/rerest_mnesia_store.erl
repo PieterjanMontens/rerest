@@ -8,6 +8,7 @@
 -module(rerest_mnesia_store).
 -include_lib("configuration.hrl").
 
+-compile(export_all).
 
 -export([init/0]).
 
@@ -103,7 +104,7 @@ lookup_schema(Sch,T) ->
     case mnesia:dirty_match_object(Pattern) of
         [Schema] -> Schema;
         _        -> NewSchema   = build_schema(Sch,fun() -> ?AUTOINCREMENT(T) end),
-                    {atomic,ok} = mnesia:transaction(fun() -> mnesia:write(NewSchema) end),
+                    {atomic,ok} = mnesia:transaction(fun() -> mnesia:write(T,NewSchema,write) end),
                     lager:notice("~s created new schema with fields:\n\t~p",
                                 [?LAGER_I,NewSchema#rerest_schema.keys]),
                     NewSchema
@@ -145,15 +146,17 @@ build_schema_test() ->
                                flags  = [?CURRENT_VERSION]},
     ?assertMatch(SchemaOut, build_schema(SchemaIn,fun() -> 118 end)).
 
+% Check if there is some way to define macros according to if we are testing or not (some eunit env var or something)
 lookup_schema_test_() ->
     {spawn,
         {setup,
             fun testdbs_start/0,
             fun testdbs_stop/1,
+            {inorder,
             [
                 fun test_schema_emptylookup/0,
                 fun test_schema_presentlookup/0
-            ]
+            ]}
         }
     }.
 
@@ -170,7 +173,7 @@ test_schema_emptylookup() ->
 test_schema_presentlookup() ->
     SchemaIn  = #{<<"age">> => {1,[]}, <<"earthling">> => {2,[]}, <<"foo">> => {3,[]}, <<"name">> => {4,[]}, <<"surname">> => {5,[]}},
     Out       = lookup_schema(SchemaIn,rerest_test_schema),
-    ?assert(1 =:= length(mensia:dirty_all_keys(rerest_test_schema))),
+    ?assert(1 =:= length(mnesia:dirty_all_keys(rerest_test_schema))),
     ?assert(is_record(Out,rerest_schema)).
 
 -define(REREST_TEST_DBDATA,#{rerest_test_schema => record_info(fields,rerest_schema),
@@ -179,6 +182,7 @@ test_schema_presentlookup() ->
                              rerest_test_data =>rerest_data}).
 
 testdbs_start() ->
+    mnesia:start(),
     CheckTable = fun(T) -> mnesia:create_table(T, [
                             {attributes, maps:get(T,?REREST_TEST_DBDATA)},
                             {record_name,maps:get(T,?REREST_TEST_RECMAP)},
@@ -188,5 +192,4 @@ testdbs_start() ->
     ok.
 
 testdbs_stop(_) ->
-    ok.
-    %[mnesia:delete_table(T) || T <- maps:keys(?REREST_TEST_DBDATA)].
+    [mnesia:delete_table(T) || T <- maps:keys(?REREST_TEST_DBDATA)].
