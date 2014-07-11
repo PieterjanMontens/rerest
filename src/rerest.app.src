@@ -14,11 +14,12 @@
                   cowlib,
                   cowboy,
                   lager,
-                  jiffy
+                  jiffy,
+                  mnesia
                  ]},
   {mod, {rerest_app, []}},
   {env, [{http_port,8080},
-         {lager, [{handlers, [{lager_console_backend, info},
+         {lager, [{handlers, [{lager_console_backend, debug},
                               {lager_file_backend, [{file, "logs/error.log"}, {level, error}]},
                               {lager_file_backend, [{file, "logs/console.log"}, {level, info}]}
                  ]}

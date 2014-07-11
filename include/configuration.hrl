@@ -1,3 +1,8 @@
+%% Define the nodes on which mnesia should run
+-define(RUNNING_NODES,[node()]).
+-define(CURRENT_VERSION,alpha).
+
+
 %% [ {URIHost, list({URIPath, Handler, Opts})} | _ ]
 -define(ROOT_URI, "/").
 -define(STATIC_URI, ?ROOT_URI ++ "static").
@@ -6,6 +11,7 @@
 -define(RECORD_URI, ?ROOT_URI ++ ":record_id").
 -define(FIELD_URI, ?RECORD_URI ++ "/:field").
 
+-define(LAGER_LN, "==== ").
 
 
 -define(COWBOY_ROUTES, [ {'_', [ { ?STATIC_URI ++ "/[...]"
@@ -23,3 +29,13 @@
                                ] }
                        ]).
 
+-define(INIT_STORAGE, rerest_mnesia_store:init).
+-define(CREATE, rerest_mnesia_store:create).
+-define(READ, rerest_mnesia_store:read).
+-define(UPDATE, rerest_mnesia_store:update).
+-define(DELETE, rerest_mnesia_store:delete).
+
+-type(rrif() :: {{schema(),schema_flags()},{list(),data_flags()}}).
+-type(schema() :: map()).
+-type(schema_flags() :: list()).
+-type(data_flags() :: list()).

@@ -1,4 +1,5 @@
 -module(rerest).
+-include_lib("configuration.hrl").
 
 -export([start/0
         ]).
@@ -13,4 +14,5 @@ start() ->
     ok = application:start(goldrush),
     ok = application:start(lager),
     ok = application:start(jiffy),
+    ?INIT_STORAGE(),
     ok = application:start(rerest).
