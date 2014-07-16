@@ -46,12 +46,33 @@ from_json(JSONRaw) ->
 -else.
 -spec from_json(json()) -> rrif().
 from_json(JSONRaw) ->
+    Handle = fun(Value,Acc) -> if is_list(Value) -> F = maps:get(handlelist,Acc),
+                                                    O = lists:foldl(F,Acc#{datarev := []},Value),
+                                                    lists:reverse(maps:get(datarev,O));
+                                  is_map(Value)  -> F = maps:get(handlemap,Acc),
+                                                    O = maps:fold(F,Acc#{pos := 1, fieldmap := #{}, datarev := []},Value),
+                                                    {{maps:get(fieldmap,O),[]},{lists:reverse(maps:get(datarev,O)),[]}};
+                                  true           -> Value end end,
+
+    HandleMap = fun(Key,Value,Acc) ->
+                    Out = Handle(Value,Acc),
+                    Acc#{pos := maps:get(pos,Acc) + 1,
+                         fieldmap := maps:put(Key,{maps:get(pos,Acc),[]}, maps:get(fieldmap,Acc)), 
+                         datarev := [Out | maps:get(datarev,Acc)]}
+                end,
+    
+    HandleList = fun(Value,Acc) ->
+                    Out = Handle(Value,Acc),
+                    Acc#{datarev := [Out | maps:get(datarev,Acc)]}
+                 end,
+                    
     DecodedMap = jiffy:decode(JSONRaw,[return_maps]),
-    {_,FR,DR} = maps:fold(fun(Key,Value, {Pos,FieldMap,DataRev}) ->
-                              {Pos+1, maps:put(Key,{Pos,[]},FieldMap), [Value| DataRev]} end,
-                           {1,#{},[]},
-                           DecodedMap),
-    {{FR,[]},{lists:reverse(DR),[]}}.
+
+    Result = maps:fold(HandleMap,
+                       #{pos => 1, fieldmap => #{}, datarev => [], handlemap => HandleMap, handlelist => HandleList},
+                       DecodedMap),
+
+    {{maps:get(fieldmap,Result),[]},{lists:reverse(maps:get(datarev,Result)),[]}}.
 -endif.
 
 
@@ -111,6 +132,35 @@ to_json_simple_test() ->
     RRIFIn  = {Schema,Element},
     JsonOut = <<"{\"age\":981,\"earthling\":true,\"foo\":\"bar\",\"name\":\"John\",\"surname\":\"Doe\"}">>,
     ?assertEqual(JsonOut,to_json(RRIFIn)).
+
+to_json_nested_test() ->
+    JsonIn = <<"{\"foo\":[\"bar\",\"maid\"],\"person\": { \"name\" :\"John\",\"surname\":\"Doe\"},\"numbers\":[{\"num\": 981},{\"num\" : 981}],\"earthling\":true}">>,
+    SchemaRootEl = {#{<<"earthling">> => {1,[]},<<"foo">> => {2,[]}, <<"numbers">> => {3,[]}, <<"person">> => {4,[]}},[]},
+    SchemaPersonEl = {#{<<"name">> => {1,[]}, <<"surname">> => {2,[]}},[]},
+    SchemaNumberEl = {#{<<"num">> => {1,[]}},[]},
+    DataNumberEl1 = {[981],[]},
+    DataNumberEl2 = {[981],[]},
+    DataPerson = {[<<"John">>,<<"Doe">>],[]},
+    RRIFOut = {SchemaRootEl,{[true,[<<"bar">>,<<"maid">>],[{SchemaNumberEl,DataNumberEl1},{SchemaNumberEl,DataNumberEl2}],{SchemaPersonEl,DataPerson}],[]}},
+    Out = from_json(JsonIn),
+    io:format("\n\nMe: ~P \n",[RRIFOut,100]),
+    io:format("\n\nErl: ~P \n",[Out,100]),
+    ?assertEqual(RRIFOut, from_json(JsonIn)).
+
+%  Example nested RRIF:
+%  {{#{<<"earthling">> => {1,[]},
+%           <<"foo">> => {2,[]},
+%           <<"numbers">> => {3,[]},
+%           <<"person">> => {4,[]}},
+%         []},
+%        {[true,<<"bar">>,
+%          [{{#{<<"num">> => {1,[]}},[]},{[981],[]}},
+%           {{#{<<"num">> => {1,[]}},[]},{[981],[]}}],
+%          {{#{<<"name">> => {1,[]},<<"surname">> => {2,[]}},[]},
+%           {[<<"John">>,<<"Doe">>],[]}}],
+%         []}}
+
 -endif.
+
 -endif.
 

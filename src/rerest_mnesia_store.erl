@@ -76,7 +76,7 @@ init() ->
                             {attributes, maps:get(T,?REREST_RECORD_DATA)},
                             {access_mode, read_write},
                             {disc_copies,Nodes},
-                            {index,masp:get(T,?REREST_RECORD_INDEX)}]) of
+                            {index,maps:get(T,?REREST_RECORD_INDEX)}]) of
                         {aborted,{already_exists,_}} ->
                             lager:info("~s table ~s present",[?LAGER_I,T]);
                         {atomic,ok} ->
