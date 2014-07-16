@@ -44,7 +44,7 @@ from_json(JSONRaw) ->
                            Decoded),
     {{lists:reverse(FR),[]},{lists:reverse(DR),[]}}.
 -else.
--spec from_json(binary()) -> rrif().
+-spec from_json(json()) -> rrif().
 from_json(JSONRaw) ->
     DecodedMap = jiffy:decode(JSONRaw,[return_maps]),
     {_,FR,DR} = maps:fold(fun(Key,Value, {Pos,FieldMap,DataRev}) ->
@@ -65,7 +65,7 @@ to_json(RRIF) ->
                          lists:reverse(Schema)),
     jiffy:encode({Jiffed}).
 -else.
--spec to_json(rrif()) -> binary().
+-spec to_json(rrif()) -> json().
 to_json(RRIF) ->
     {{Schema,_},{Data,_}} = RRIF,
     Jiffed = maps:fold(fun(Key,{Pos,[]},Out) ->
@@ -78,6 +78,7 @@ to_json(RRIF) ->
 %% ===================================================================
 %% TESTS
 %% ===================================================================
+-ifdef(TEST).
 -include_lib("eunit/include/eunit.hrl").
 
 -ifdef(NOMAPS).
@@ -111,3 +112,5 @@ to_json_simple_test() ->
     JsonOut = <<"{\"age\":981,\"earthling\":true,\"foo\":\"bar\",\"name\":\"John\",\"surname\":\"Doe\"}">>,
     ?assertEqual(JsonOut,to_json(RRIFIn)).
 -endif.
+-endif.
+

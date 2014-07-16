@@ -35,7 +35,17 @@
 -define(UPDATE, rerest_mnesia_store:update).
 -define(DELETE, rerest_mnesia_store:delete).
 
--type(rrif() :: {{schema(),schema_flags()},{list(),data_flags()}}).
+-define(RRIF_SCHEMA(X), (fun({{S,_},_}) -> S end)(X)).
+
+-type(json() :: binary()).
+
+-type(rrif() :: {schema_node(),{list(),data_flags()}}).
+-type(schema_node() :: {schema(),schema_flags()}).
 -type(schema() :: map()).
 -type(schema_flags() :: list()).
 -type(data_flags() :: list()).
+
+-type(data_id() :: binary()).
+-type(schema_id() :: binary()).
+
+-type(table_name() :: atom()).
