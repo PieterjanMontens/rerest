@@ -36,6 +36,7 @@
 %% @doc Build RRIF from Json input
 -spec from_json(json()) -> rrif().
 from_json(JSONRaw) ->
+    %WARNING: Bad quality code below
     Handle = fun(Value,Acc) -> if is_list(Value) -> F = maps:get(handlelist,Acc),
                                                     O = lists:foldl(F,Acc#{datarev := []},Value),
                                                     lists:reverse(maps:get(datarev,O));
@@ -69,6 +70,7 @@ from_json(JSONRaw) ->
 -spec to_json(rrif()) -> json().
 -record(ths, {handle,handleriff}).
 to_json(RRIF) ->
+    %WARNING: Bad quality code below
     Handle = fun(Value,S) ->
                 if is_list(Value)  -> F = S#ths.handle,
                                       [F(El,S) || El <- Value];

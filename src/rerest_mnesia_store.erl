@@ -95,6 +95,7 @@ create(RRIFRaw) ->
     RRIF_flat = rrif_flatten(RRIFRaw),
     create_flat(RRIF_flat).
 
+    %WARNING: Bad quality code below
     create_flat(RRIF_flat) ->
         Length = maps:get(length,RRIF_flat),
         walk_and_store_flatrrif(RRIF_flat,Length,#{}).
@@ -213,6 +214,7 @@ sort_schema(Schema) ->
 rrif_flatten(RRIF) ->
     walk_riff_stack([RRIF],#{},0,1).
     
+    %WARNING: Bad quality code below
     walk_riff_stack([],Map,_,Length) -> maps:put(length,Length,Map);
 
     walk_riff_stack([H|Tail],Map,PrecPos,OldCounter) ->
