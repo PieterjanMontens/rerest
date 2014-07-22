@@ -40,6 +40,9 @@
 -type(json() :: binary()).
 
 -type(rrif() :: {schema_node(),{list(),data_flags()}}).
+-type(rrif_flat() :: list()).
+-type(temp2id() :: map()).
+
 -type(schema_node() :: {schema(),schema_flags()}).
 -type(schema() :: map()).
 -type(schema_flags() :: list()).

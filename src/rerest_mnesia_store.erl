@@ -91,12 +91,26 @@ init() ->
 
 %% @doc Create record in storage
 -spec create(rrif()) -> ok.
-create({{RawSch,_},_} = RRIFRaw) ->
-    %TODO: Provide way to flatten RRIF and record nested "objects"
-    SchemaR = lookup_schema(RawSch),
-    RRIF = align_rrif(RRIFRaw,SchemaR),
-    DataRec = build_data(RRIF),
-    write_data(DataRec).
+create(RRIFRaw) ->
+    RRIF_flat = rrif_flatten(RRIFRaw),
+    create_flat(RRIF_flat).
+
+    create_flat(RRIF_flat) ->
+        Length = maps:get(length,RRIF_flat),
+        walk_and_store_flatrrif(RRIF_flat,Length,#{}).
+
+        walk_and_store_flatrrif(_,0,Temp2Id) -> Temp2Id;
+        walk_and_store_flatrrif(Map,Index,Temp2Id) ->
+            RRIFRaw = maps:get(Index,Map),
+            {{RawSch,_},_} = RRIFRaw,
+            SchemaR = lookup_schema(RawSch),
+            AlignedRRIF = align_rrif(RRIFRaw,SchemaR),
+            RRIF = temp2id(AlignedRRIF,Temp2Id),
+            DataRec = build_data(RRIF),
+            write_data(DataRec),
+            walk_and_store_flatrrif(Map,Index-1,maps:put(Index,DataRec#rerest_data.id,Temp2Id)).
+
+
 
 %% @doc Retrieve record from storage
 -spec read(data_id()) -> rrif().
@@ -190,6 +204,61 @@ sort_schema(Schema) ->
                           {1,#{}},
                           lists:sort(maps:keys(Schema))),
     Out.
+
+%% @doc Flatten a rrif (ie: un-nest nested data)
+%% This function returns a map, where each nested rrif has been replaced with a
+%% temporary id, which happens to be the key of that rrif in the map.
+%% The map also has a "length" key, with its size.
+-spec rrif_flatten(rrif()) -> rrif_flat().
+rrif_flatten(RRIF) ->
+    walk_riff_stack([RRIF],#{},0,1).
+    
+    walk_riff_stack([],Map,_,Length) -> maps:put(length,Length,Map);
+
+    walk_riff_stack([H|Tail],Map,PrecPos,OldCounter) ->
+        Pos = PrecPos + 1,
+        {MoreTail,RRIF,NewCounter} = walk_rrif(H,OldCounter),
+        NewMap = maps:put(Pos,RRIF,Map),
+        walk_riff_stack(Tail ++ MoreTail, NewMap,Pos,NewCounter).
+
+    walk_rrif(RRIFIn,PrecPos) ->
+        {SchemaNode,{DataIn,DataFlags}} = RRIFIn,
+        {DataOut,MoreTail,NewPos} = walk_list(DataIn,PrecPos,[],[]),
+        RRIFOut = {SchemaNode,{DataOut,DataFlags}},
+
+        {MoreTail, RRIFOut, NewPos}.
+
+    walk_list([],Pos,DataAcc,TailAcc) ->
+        {lists:reverse(DataAcc), lists:reverse(TailAcc),Pos};
+
+    walk_list([H|Tail],PrecPos,DataAcc,TailAcc) ->
+        if 
+            is_tuple(H) ->
+                Pos = PrecPos + 1,
+                walk_list(Tail,Pos,[{rtemp,Pos}|DataAcc],[H|TailAcc]);
+            is_list(H) ->
+                {DataOut, MoreTail, NewPos} = walk_list(H,PrecPos,[],[]),
+                walk_list(Tail,NewPos,[DataOut|DataAcc],lists:append(lists:reverse(MoreTail),TailAcc));
+            true -> 
+                walk_list(Tail,PrecPos,[H|DataAcc],TailAcc)
+        end.
+
+%% @doc Replace a flattened RRIF's data temporary id's with the final ones
+-spec temp2id(rrif(),temp2id()) -> rec_data().
+temp2id({Schema,{DataIn,DataFlags}},Temp2Id) ->
+    DataOut = temp2id_walk(DataIn,Temp2Id,[]),
+    {Schema,{DataOut,DataFlags}}.
+
+    temp2id_walk([],_,Acc) -> lists:reverse(Acc);
+
+    temp2id_walk([H|Tail],Temp2id,Acc) ->
+        if  is_tuple(H) -> {rtemp,TId} = H,
+                           temp2id_walk(Tail,Temp2id,[{r,maps:get(TId,Temp2id)} | Acc]);
+            is_list(H) ->  NewList = temp2id_walk(H,Temp2id,[]),
+                           temp2id_walk(Tail,Temp2id,[NewList|Acc]);
+            true -> temp2id_walk(Tail,Temp2id,[H|Acc])
+        end.
+
 
 %% ===================================================================
 %% Internal MNESIA related functions
@@ -334,6 +403,36 @@ sort_schema_test_() ->
     Test2Out = #{1 => {1,[test]},"a" => {2,[]},<<"aba">> => {3,[]}},
     [?_assertEqual(Test1Out, sort_schema(Test1In))
     ,?_assertEqual(Test2Out, sort_schema(Test2In))].
+
+rrif_flatten_test() ->
+    SchemaRootEl = {#{<<"earthling">> => {1,[]},<<"foo">> => {2,[]}, <<"numbers">> => {3,[]}, <<"person">> => {4,[]}},[]},
+    SchemaPersonEl = {#{<<"name">> => {1,[]}, <<"surname">> => {2,[]}},[]},
+    SchemaNumberEl = {#{<<"num">> => {1,[]}},[]},
+    DataNumberNode = [{SchemaNumberEl,{[981],[]}},{SchemaNumberEl,{[982],[]}}],
+    DataPerson = {SchemaPersonEl,{[<<"John">>,<<"Doe">>],[]}},
+    RRIFIn = {SchemaRootEl,{[true,[<<"bar">>,<<"maid">>],DataNumberNode,DataPerson],[]}},
+
+    RRIFFlat = #{ 1 => {SchemaRootEl,{[true,[<<"bar">>,<<"maid">>],[{rtemp,2},{rtemp,3}],{rtemp,4}],[]}},
+                  2 => {SchemaNumberEl,{[981],[]}},
+                  3 => {SchemaNumberEl,{[982],[]}},
+                  4 => {SchemaPersonEl,{[<<"John">>,<<"Doe">>],[]}},
+                  length => 4},
+
+    io:format("\n\nComputed: ~P \n",[rrif_flatten(RRIFIn),100]),
+    io:format("\n\nExpected: ~P \n",[RRIFFlat,100]),
+    ?assertEqual(RRIFFlat, rrif_flatten(RRIFIn)).
+                
+temp2id_test() ->
+    RiffIn = {{#{<<"earthling">> => {1,[]}, <<"foo">> => {2,[]}, <<"numbers">> => {3,[]}, <<"person">> => {4,[]}}, []},
+              {[true, [<<"bar">>,<<"maid">>], [{rtemp,2},{rtemp,3}], {rtemp,4}], []}},
+
+    Map = #{2 => <<"ABA">>, 3 => <<"BCB">>, 4 => <<"AVA">>},
+
+    RiffOut = {{#{<<"earthling">> => {1,[]}, <<"foo">> => {2,[]}, <<"numbers">> => {3,[]}, <<"person">> => {4,[]}}, []},
+              {[true, [<<"bar">>,<<"maid">>], [{r,<<"ABA">>},{r,<<"BCB">>}], {r,<<"AVA">>}], []}},
+
+    ?assertEqual(RiffOut, temp2id(RiffIn,Map)).
+
 
 mnesia_data_test_() ->
     {spawn,
